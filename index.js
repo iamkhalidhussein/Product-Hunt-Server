@@ -28,9 +28,15 @@ async function run() {
         await client.connect();
 
         const featuredProductsCollection = client.db("featuredProducts").collection("Products");
+        const latestResourcesCollection = client.db("latestResources").collection("products");
 
         app.get('/featured-products', async(req, res) => {
             const result = await featuredProductsCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.get('/latest-resources', async(req, res) => {
+            const result = await latestResourcesCollection.find().toArray();
             res.send(result);
         })
 
