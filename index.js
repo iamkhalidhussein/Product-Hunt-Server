@@ -27,14 +27,24 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
 
+        const userCollection = client.db("productHunt").collection("Users");
         const featuredProductsCollection = client.db("featuredProducts").collection("Products");
         const latestResourcesCollection = client.db("latestResources").collection("products");
 
+        //users related apis
+        app.post('/users', async(req, res) => {
+            const user = req.body;
+            const result = await userCollection.insertOne(user);
+            res.send(result);
+        })
+
+        //getting data from db for featured products
         app.get('/featured-products', async(req, res) => {
             const result = await featuredProductsCollection.find().toArray();
             res.send(result);
         })
 
+        //getting data from db for latest resources
         app.get('/latest-resources', async(req, res) => {
             const result = await latestResourcesCollection.find().toArray();
             res.send(result);
