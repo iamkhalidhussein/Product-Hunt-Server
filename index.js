@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 5000;
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPEZ_SECRET_KEY);
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
@@ -85,6 +86,20 @@ async function run() {
             }
             res.send({admin});
         })
+        
+        app.get('/users/moderator/:email', verifyToken, async(req, res) => {
+            const email = req.params.email;
+            if(email !== req.decoded.email) {
+                return req.status(403).send({message: 'unauthorized access'})
+            }
+            const query = {email: email};
+            const user = await userCollection.findOne(query);
+            let moderator = false;
+            if(user) {
+                moderator = user?.moderator === true
+            }
+            res.send({moderator});
+        })
 
         app.post('/users', async(req, res) => {
             const user = req.body;
@@ -103,12 +118,94 @@ async function run() {
             const filter = {_id: new ObjectId(id)};
             const updatedDoc = {
                 $set: {
-                    role: 'admin'
+                    role: 'admin',
                 }
             }
             const result = await userCollection.updateOne(filter, updatedDoc);
             res.send(result);
         })
+        app.patch('/users/moderator/:id', async(req, res) => {
+            const id = req.params.id;
+            const filter = {_id: new ObjectId(id)};
+            const updatedDoc = {
+                $set: {
+                    moderator: true
+                }
+            }
+            const result = await userCollection.updateOne(filter, updatedDoc);
+            res.send(result);
+        })
+
+        app.patch('/userrs/:useremail/:cartId', async (req, res) => {
+            const cartId = req.params.cartId;
+            const userEmail = req.params.useremail;
+            console.log(cartId, userEmail)
+            const filter = { _id: new ObjectId(cartId), email: userEmail };
+        
+            // Check if the user has already upvoted within the specified cart
+            const currentUser = await featuredProductsCollection.findOne(filter);
+        
+            if (currentUser) {
+                // User has already upvoted, decrement the upvote count and mark as not upvoted
+                const updatedDoc = {
+                    $set: {
+                        upvote: currentUser.previousUpvote,
+                        upvoted: false + ' ' + userEmail,
+                        email: null
+                    }
+                };
+                const result = await featuredProductsCollection.updateOne(filter, updatedDoc);
+                res.send(result);
+            } else {
+                // User has not upvoted, increment the upvote count and mark as upvoted
+                const featuredProducts = await featuredProductsCollection.findOne({ _id: new ObjectId(cartId) });
+                const updatedDoc = {
+                    $set: {
+                        upvote: featuredProducts.upvote + 1,
+                        upvoted: true + ' ' + userEmail,
+                        previousUpvote: featuredProducts.upvote,
+                        email: userEmail
+                    }
+                };
+                const result = await featuredProductsCollection.updateOne({ _id: new ObjectId(cartId) }, updatedDoc);
+                res.send(result);
+            }
+        });
+
+        app.patch('/users/:useremail/:cartId', async (req, res) => {
+            const cartId = req.params.cartId;
+            const userEmail = req.params.useremail;
+            const filter = { _id: new ObjectId(cartId), email: userEmail };
+        
+            // Check if the user has already upvoted within the specified cart
+            const currentUser = await latestResourcesCollection.findOne(filter);
+        
+            if (currentUser) {
+                // User has already upvoted, decrement the upvote count and mark as not upvoted
+                const updatedDoc = {
+                    $set: {
+                        upvote: currentUser.previousUpvote,
+                        upvoted: false + ' ' + userEmail,
+                        email: null
+                    }
+                };
+                const result = await latestResourcesCollection.updateOne(filter, updatedDoc);
+                res.send(result);
+            } else {
+                // User has not upvoted, increment the upvote count and mark as upvoted
+                const latestResource = await latestResourcesCollection.findOne({ _id: new ObjectId(cartId) });
+                const updatedDoc = {
+                    $set: {
+                        upvote: latestResource.upvote + 1,
+                        upvoted: true + ' ' + userEmail,
+                        previousUpvote: latestResource.upvote,
+                        email: userEmail
+                    }
+                };
+                const result = await latestResourcesCollection.updateOne({ _id: new ObjectId(cartId) }, updatedDoc);
+                res.send(result);
+            }
+        });
 
         app.delete('/users/:id', async(req, res) => {
             const id = req.params.id;
@@ -127,6 +224,23 @@ async function run() {
         app.get('/latest-resources', async(req, res) => {
             const result = await latestResourcesCollection.find().toArray();
             res.send(result);
+        })
+
+
+        //payment intent
+        app.post('/create-payment-intent', async(req, res) => {
+            const {price} = req.body;
+            const amount = parseInt(price * 100);
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            })
+
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
         })
 
         // Send a ping to confirm a successful connection
