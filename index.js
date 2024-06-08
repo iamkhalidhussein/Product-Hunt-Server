@@ -30,6 +30,7 @@ async function run() {
         await client.connect();
 
         const userCollection = client.db("productHunt").collection("Users");
+        const subscribedUserCollection = client.db("subscribedUsers").collection("users");
         const featuredProductsCollection = client.db("featuredProducts").collection("Products");
         const latestResourcesCollection = client.db("latestResources").collection("products");
 
@@ -141,10 +142,17 @@ async function run() {
             const userEmail = req.params.useremail;
             console.log(cartId, userEmail)
             const filter = { _id: new ObjectId(cartId), email: userEmail };
-        
+            const creatorFilter = { _id: new ObjectId(cartId), creatorEmail: userEmail };
+            const creator = await featuredProductsCollection.findOne(creatorFilter);
+            if(creator) {
+                console.log('can not vote your own product');
+                res.send(true)
+                return;
+            }
             // Check if the user has already upvoted within the specified cart
             const currentUser = await featuredProductsCollection.findOne(filter);
-        
+            
+            console.log('current user ln: 149',currentUser?.email)
             if (currentUser) {
                 // User has already upvoted, decrement the upvote count and mark as not upvoted
                 const updatedDoc = {
@@ -159,6 +167,9 @@ async function run() {
             } else {
                 // User has not upvoted, increment the upvote count and mark as upvoted
                 const featuredProducts = await featuredProductsCollection.findOne({ _id: new ObjectId(cartId) });
+                console.log('featured products:',featuredProducts)
+                console.log('featured products upvote: ',featuredProducts.upvote)
+                console.log('featured products upvote: ',featuredProducts.upvote)
                 const updatedDoc = {
                     $set: {
                         upvote: featuredProducts.upvote + 1,
@@ -167,7 +178,7 @@ async function run() {
                         email: userEmail
                     }
                 };
-                const result = await featuredProductsCollection.updateOne({ _id: new ObjectId(cartId) }, updatedDoc);
+                    const result = await featuredProductsCollection.updateOne({ _id: new ObjectId(cartId) }, updatedDoc);
                 res.send(result);
             }
         });
@@ -229,8 +240,10 @@ async function run() {
 
         //payment intent
         app.post('/create-payment-intent', async(req, res) => {
+            console.log(req.body)
             const {price} = req.body;
             const amount = parseInt(price * 100);
+            console.log(amount,'amount inside the intent');
 
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
@@ -241,6 +254,36 @@ async function run() {
             res.send({
                 clientSecret: paymentIntent.client_secret
             })
+        })
+
+        app.get('/users/paymentinfo/:email', async(req, res) => {
+            const email = req.params.email;
+            const filter = {email: email};
+            const result = await subscribedUserCollection.findOne(filter);
+            res.send(result);
+        })
+
+        app.post('/users/payment/:email', async(req, res) => {
+            const email = req.params.email;
+            const query = {email: email}
+            const result = await subscribedUserCollection.insertOne(query);
+            res.send(result);
+        })
+
+        //user product post
+        app.post('/users/submitProduct', async(req, res) => {
+            const userData = req.body;
+            console.log(userData)
+            const result = await featuredProductsCollection.insertOne(userData);
+            res.send(result);
+        })
+
+        //get user posted products
+        app.get('/users/getSubmittedProduct/:email', async(req, res) => {
+            const email = req.params.email;
+            const query = {creatorEmail: email};
+            const result = await featuredProductsCollection.find(query).toArray();
+            res.send(result);
         })
 
         // Send a ping to confirm a successful connection
