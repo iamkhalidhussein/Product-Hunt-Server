@@ -307,8 +307,8 @@ async function run() {
                 currency:paymentInfo.currenccy,
                 tran_id:trxId,
                 success_url:"http://localhost:5000/success-payment",
-                fail_url:"http://yoursite.com/fail.php",
-                cancel_url:"http://yoursite.com/cancel.php",
+                fail_url:"http://localhost:5000/failed",
+                cancel_url:"http://localhost:5000/cancel",
                 cus_name:"Customer Name",
                 cus_email:"cust@yahoo.com",
                 cus_add1:"Dhaka",
@@ -386,6 +386,16 @@ async function run() {
             const updateData = await payments.updateOne(query, update);
 
             console.log('success data', successData, 'updated data:', updateData);
+
+            res.redirect('http://localhost:5173/success')
+        })
+
+        app.post('/failed', async(req, res) => {
+            res.redirect('http://localhost:5173/failed')
+        })
+
+        app.post('/cancel', async(req, res) => {
+            res.redirect('http://localhost:5173/cancel')
         })
 
 
