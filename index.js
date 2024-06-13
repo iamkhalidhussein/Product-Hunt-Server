@@ -9,10 +9,12 @@ const jwt = require('jsonwebtoken');
 //middlewares
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded());
 
 
 //mongodb
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { default: axios } = require('axios');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.rpbygkt.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -27,12 +29,14 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const userCollection = client.db("productHunt").collection("Users");
         const subscribedUserCollection = client.db("subscribedUsers").collection("users");
         const featuredProductsCollection = client.db("featuredProducts").collection("Products");
-        const latestResourcesCollection = client.db("latestResources").collection("products");
+        const latestResourcesCollection = client.db('latestResources').collection('products');
+        const userInfoCollection = client.db("userInfo").collection("users");
+        const payments = client.db('Payments').collection('userPayments');
 
         //jwt related apis
         app.post('/jwt', async(req, res) => {
@@ -286,8 +290,107 @@ async function run() {
             res.send(result);
         })
 
+
+
+
+
+        //ssl commerz integration
+        app.post('/create-payment', async(req, res) => {
+            const paymentInfo = req.body;
+            const trxId = new ObjectId().toString();
+            console.log('initial data: ',trxId)
+
+            const initiateData = {
+                store_id:"resou666a864f1b2b6",
+                store_passwd:"resou666a864f1b2b6@ssl",
+                total_amount: paymentInfo.ammount,
+                currency:paymentInfo.currenccy,
+                tran_id:trxId,
+                success_url:"http://localhost:5000/success-payment",
+                fail_url:"http://yoursite.com/fail.php",
+                cancel_url:"http://yoursite.com/cancel.php",
+                cus_name:"Customer Name",
+                cus_email:"cust@yahoo.com",
+                cus_add1:"Dhaka",
+                cus_add2:"Dhaka",
+                cus_city:"Dhaka",
+                cus_state:"Dhaka",
+                cus_postcode:1000,
+                cus_country:"Bangladesh",
+                cus_phone:"01711111111",
+                cus_fax:"01711111111",
+                ship_name:"Customer Name",
+                shipping_method: 'NO',
+                product_name: 'Laptop',
+                product_category: 'Laptop',
+                product_profile: 'general',
+                ship_add1 :"Dhaka",
+                ship_add2:"Dhaka",
+                ship_city:"Dhaka",
+                ship_state:"Dhaka",
+                ship_postcode:1000,
+                ship_country:"Bangladesh",
+                multi_card_name:"mastercard,visacard,amexcard",
+                value_a:"ref001_A",
+                value_b:"ref002_B",
+                value_c:"ref003_C",
+                value_d:"ref004_D"
+
+            }
+            
+            const responce = await axios({
+                method: 'POST',
+                url: 'https://sandbox.sslcommerz.com/gwprocess/v4/api.php',
+                data: initiateData,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            
+            const savedData = {
+                cus_name: 'Customer',
+                paymentId: trxId,
+                amount: paymentInfo.ammount,
+                status: 'Pending'
+            }
+            console.log('txn id for saved data', trxId);
+            
+            const respon = await payments.insertOne(savedData)
+            if(respon) {
+                console.log(responce)
+                res.send({
+                    paymentUrl: responce.data.GatewayPageURL
+                })
+            }
+
+        })
+
+        app.post('/success-payment', async(req, res) => {
+            const successData = req.body;
+
+            if(successData.status !== "VALID") {
+                throw new Error("Unauthorized payment");
+            }
+
+            //update the database
+            const query = {
+                paymentId: successData.tran_id
+            }
+
+            const update = {
+                $set: {
+                    status: "Success"
+                }
+            }
+
+            const updateData = await payments.updateOne(query, update);
+
+            console.log('success data', successData, 'updated data:', updateData);
+        })
+
+
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
