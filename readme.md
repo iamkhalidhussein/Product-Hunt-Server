@@ -1,6 +1,6 @@
 # Product Discovery Platform - resource fyi
 
-Welcome to the **Product Discovery Platform Backend**. This is the server-side part of a web application inspired by [Product Hunt](https://www.producthunt.com), where users can submit, vote, and comment on products.
+Welcome to the **Product Discovery Platform Backend**. This is the server-side part of a web application inspired by [Product Hunt](https://resource-fyi.web.app), where users can submit, vote, and comment on products.
 
 ## Table of Contents
 
