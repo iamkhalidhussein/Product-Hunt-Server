@@ -1,4 +1,4 @@
 .env
 node_modules
 .vercel
-resource-fyi-firebase-adminsdk-9itrx-3192faa0c4.json
+echo "firebase-sdk/resource-fyi-firebase-adminsdk-9itrx-3192faa0c4.json" >> .gitignore
