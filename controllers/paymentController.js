@@ -1,8 +1,15 @@
 const stripe = require('../config/stripe');
 const { payments } = require('../models/paymentModel');
+const { subscribedUserCollection } = require('../models/userModel');
 const { ObjectId } = require('mongodb');
 const { default: axios } = require('axios');
 require('dotenv').config();
+
+const stripePayment = async (req, res) => {
+    const payment = req.body;
+    const paymentResult = await subscribedUserCollection.insertOne(payment);
+    res.send({paymentResult});
+}
 
 const createPaymentIntent = async (req, res) => {
     const { price } = req.body;
@@ -22,7 +29,6 @@ const createPaymentIntent = async (req, res) => {
 const createPayment = async (req, res) => {
     const paymentInfo = req.body;
     const trxId = new ObjectId().toString();
-    console.log('initial data: ',trxId)
 
     const backendUrl = process.env.SERVER_URL;
 
@@ -78,11 +84,9 @@ const createPayment = async (req, res) => {
         amount: paymentInfo.ammount,
         status: 'Pending'
     }
-    console.log('txn id for saved data', trxId);
 
     const respon = await payments.insertOne(savedData)
     if(respon) {
-        console.log(responce)
         res.send({
             paymentUrl: responce.data.GatewayPageURL
         })
@@ -92,7 +96,6 @@ const successPayment = async (req, res) => {
     const successData = req.body;
 
     if(successData.status !== "VALID") {
-        console.log(successData.status);
         throw new Error("Unauthorized payment", successData.status);
     }
 
@@ -109,8 +112,6 @@ const successPayment = async (req, res) => {
 
     const updateData = await payments.updateOne(query, update);
 
-    console.log('success data', successData, 'updated data:', updateData);
-
     const clientUrl = process.env.CLIENT_URL;
 
     const redirectUrl = `${clientUrl}/payment/success?tran_id=${successData.tran_id}&card_issuer=${successData.card_issuer}&tran_date=${successData.tran_date}&currency_type=${successData.currency_type}&amount=${successData.amount}&status=Success`;
@@ -120,12 +121,10 @@ const successPayment = async (req, res) => {
 }
 
 const cancelPayment = async (req, res) => {
-    console.log('payment cancel', req.body);
 
     const cancelData = req.body;
 
     if(cancelData.status !== "CANCELLED") {
-        console.log(cancelData.status);
         throw new Error("Unauthorized payment", cancelData.status);
     }
 
@@ -142,8 +141,6 @@ const cancelPayment = async (req, res) => {
 
     const updateData = await payments.updateOne(query, update);
 
-    console.log('cancel data', cancelData, 'updated data:', updateData);
-
     const clientUrl = process.env.CLIENT_URL;
 
     const redirectUrl = `${clientUrl}/payment/cancel?tran_id=${cancelData.tran_id}&card_issuer=${cancelData.card_issuer}&tran_date=${cancelData.tran_date}&currency_type=${cancelData.currency_type}&amount=${cancelData.amount}&error=${cancelData.error}&status=Canceled`;
@@ -153,12 +150,10 @@ const cancelPayment = async (req, res) => {
 }
 
 const failedPayment = async (req, res) => {
-    console.log('payment failed', req.body);
 
     const failedData = req.body;
 
     if(failedData.status !== "FAILED") {    
-        console.log(failedData.status);
         throw new Error("Unauthorized payment", failedData.status);
     }
 
@@ -175,8 +170,6 @@ const failedPayment = async (req, res) => {
 
     const updateData = await payments.updateOne(query, update);
 
-    console.log('cancel data', failedData, 'updated data:', updateData);
-
     const clientUrl = process.env.CLIENT_URL;
     
     const redirectUrl = `${clientUrl}/payment/failed?tran_id=${failedData.tran_id}&card_issuer=${failedData.card_issuer}&tran_date=${failedData.tran_date}&currency_type=${failedData.currency_type}&amount=${failedData.amount}&error=${failedData.error}&status=Failed`;
@@ -187,4 +180,4 @@ const failedPayment = async (req, res) => {
 
 // Define other payment-related controllers...
 
-module.exports = { createPaymentIntent, createPayment, successPayment, cancelPayment, failedPayment,/* other controllers */ };
+module.exports = { createPaymentIntent, createPayment, successPayment, cancelPayment, failedPayment, stripePayment };

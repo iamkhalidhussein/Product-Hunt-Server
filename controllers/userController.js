@@ -1,13 +1,47 @@
-const { userCollection, latestResourcesCollection, featuredProductsCollection, subscribedUserCollection } = require('../models/userModel');
-const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
+const { latestResourcesCollection, featuredProductsCollection, subscribedUserCollection, userProfileInfoCollection } = require('../models/userModel');
 const { ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-
 const getUsers = async (req, res) => {
-    const result = await userCollection.find().toArray();
+    const result = await userProfileInfoCollection.find().toArray();
     res.send(result);
+}
+
+const postUserProfileInfo = async (req, res) => {
+    const email = req.params.email;
+    const query = {email: email};
+    const data = req.body;
+    
+    try {
+        const existingUser = await userProfileInfoCollection.findOne(query);
+        if(existingUser) {
+            return res.status(200).send({ success: false, message: 'User already exists' });
+        }
+        const result = await userProfileInfoCollection.insertOne(data);
+        res.send(result);
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: 'Internal server error in postuserprofileinfo'});
+    }
+};
+
+const updateUserProfileInfo = async (req, res) => {
+    const email = req.params.email;
+    const updates = req.body;
+    const result = await userProfileInfoCollection.findOneAndUpdate(
+        { email },
+        { $set: updates },
+        { returnDocument: 'after' }
+    );
+    res.send(result);
+};
+
+const getUserProfileInfo = async (req, res) => {
+    const email = req.params.email;
+    const query = {email: email}
+    const data = await userProfileInfoCollection.findOne(query);
+    res.send(data);
 };
 
 const doUpvote = async (req, res) => {
@@ -48,19 +82,16 @@ const doUpvote = async (req, res) => {
 const doUpvoteFeatured = async (req, res) => {
     const cartId = req.params.cartId;
     const userEmail = req.params.useremail;
-    console.log(cartId, userEmail)
     const filter = { _id: new ObjectId(cartId), email: userEmail };
     const creatorFilter = { _id: new ObjectId(cartId), creatorEmail: userEmail };
     const creator = await featuredProductsCollection.findOne(creatorFilter);
     if(creator) {
-        console.log('can not vote your own product');
         res.send(true)
         return;
     }
     // Check if the user has already upvoted within the specified cart
     const currentUser = await featuredProductsCollection.findOne(filter);
     
-    console.log('current user ln: 149',currentUser?.email)
     if (currentUser) {
         // User has already upvoted, decrement the upvote count and mark as not upvoted
         const updatedDoc = {
@@ -75,9 +106,6 @@ const doUpvoteFeatured = async (req, res) => {
     } else {
         // User has not upvoted, increment the upvote count and mark as upvoted
         const featuredProducts = await featuredProductsCollection.findOne({ _id: new ObjectId(cartId) });
-        console.log('featured products:',featuredProducts)
-        console.log('featured products upvote: ',featuredProducts.upvote)
-        console.log('featured products upvote: ',featuredProducts.upvote)
         const updatedDoc = {
             $set: {
                 upvote: featuredProducts.upvote + 1,
@@ -101,10 +129,10 @@ const getPaymentInfo = async (req, res) => {
 const getAdminStatus = async (req, res) => {
     const email = req.params.email;
     if(email !== req.decoded.email) {
-        return req.status(403).send({message: 'unauthorized access'})
+        return res.status(403).send({message: 'unauthorized access'})
     }
     const query = {email: email};
-    const user = await userCollection.findOne(query);
+    const user = await userProfileInfoCollection.findOne(query);
     let admin = false;
     if(user) {
         admin = user?.role === 'admin'
@@ -115,22 +143,23 @@ const getAdminStatus = async (req, res) => {
 const getModeratorStatus = async (req, res) => {
     const email = req.params.email;
     if(email !== req.decoded.email) {
-        return req.status(403).send({message: 'unauthorized access'})
+        return res.status(403).send({message: 'unauthorized access'})
     }
     const query = {email: email};
-    const user = await userCollection.findOne(query);
+    const user = await userProfileInfoCollection.findOne(query);
     let moderator = false;
     if(user) {
-        moderator = user?.moderator === true
+        moderator = user?.moderator === "true"
     }
     res.send({moderator});
-}
+};
+
+
 
 const jwtController = async (req, res) => {
     const user = req.body;
     const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
     res.send({token});
 }
-// Define other user-related controllers...
 
-module.exports = { getUsers, doUpvote, doUpvoteFeatured, getPaymentInfo, getAdminStatus, getModeratorStatus, jwtController,/* other controllers */ };
+module.exports = { getUsers, doUpvote, doUpvoteFeatured, getPaymentInfo, getAdminStatus, getModeratorStatus, jwtController, getUserProfileInfo, postUserProfileInfo, updateUserProfileInfo };

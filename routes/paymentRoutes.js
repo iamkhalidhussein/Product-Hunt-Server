@@ -7,6 +7,7 @@ router.post('/create-payment', paymentController.createPayment);
 router.post('/success-payment', paymentController.successPayment);
 router.post('/cancel-payment', paymentController.cancelPayment);
 router.post('/failed-payment', paymentController.failedPayment);
+router.post('/stripe', paymentController.stripePayment);
 // Define other payment-related routes...
 
 module.exports = router;

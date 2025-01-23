@@ -1,28 +1,53 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const { userProfileInfoCollection } = require('../models/userModel');
+const firebaseAdmin = require('../firebase-sdk/firebase-admin-sdk');
 
-
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
     if (!req.headers.authorization) {
         return res.status(401).send({ message: 'forbidden access' });
     }
     const token = req.headers.authorization.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
-        if (error) {
-            return res.status(401).send({ message: 'forbidden access' });
+    const isfirebaseToken = req.headers.firebase;
+
+    if(token && !isfirebaseToken) {
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+            if (error) {
+                return res.status(401).send({ message: 'forbidden access' });
+            }
+            req.decoded = decoded;
+            next();
+        });
+    } else if(isfirebaseToken) {
+        try {
+            const decodedToken = await firebaseAdmin.auth().verifyIdToken(token);
+            req.user = decodedToken;
+            next();
+        } catch (error) {
+            console.error("Token verification error:", error);
+            return res.status(401).send({ message: 'Unauthorized: Invalid token' });
         }
-        req.decoded = decoded;
-        next();
-    });
+    }
+    
 };
 
 const verifyAdmin = async (req, res, next) => {
     const email = req.decoded.email;
-    const user = await req.db.userCollection.findOne({ email });
+    const user = await userProfileInfoCollection.findOne({ email });
     if (user?.role !== 'admin') {
         return res.status(403).send({ message: 'forbidden access' });
     }
     next();
 };
 
-module.exports = { verifyToken, verifyAdmin };
+const verifyModerator = async (req, res, next) => {
+    const email = req.params.email;
+    const query = {email: email};
+    const user = await userProfileInfoCollection.findOne(query);
+    if(user?.moderator !== 'true') {
+        return res.status(403).send({ message: 'forbidden access' });
+    }
+    next();
+};
+
+module.exports = { verifyToken, verifyAdmin, verifyModerator };
