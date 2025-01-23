@@ -9,5 +9,6 @@ router.post('/submitProduct', productController.postSubmittedProduct);
 router.get('/getSubmittedProduct/:email', productController.getSubmittedProduct);
 router.delete('/deleteUserProduct/:productId', productController.deleteUserProduct);
 router.get('/getallsubmittedproducts/:email', verifyToken, verifyModerator, productController.getAllSubmittedProducts);
+router.patch('/approvependingproducts/:email/:id', verifyToken, verifyModerator, productController.approvedPendingProducts)
 
 module.exports = router;

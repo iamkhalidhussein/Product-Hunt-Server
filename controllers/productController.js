@@ -41,4 +41,21 @@ const deleteUserProduct = async (req, res) => {
     res.send(result);
 }
 
-module.exports = { getFeaturedProducts, getLatestResources, postSubmittedProduct, getSubmittedProduct, deleteUserProduct, getAllSubmittedProducts };
+const approvedPendingProducts = async (req, res) => {
+    const productId = req.params.id;
+    const query = { _id: new ObjectId(productId) };
+    const updatedData = { $set: { status: 'approved' } };
+
+    try {
+        const result = await featuredProductsCollection.updateOne(query, updatedData);
+        if(result.matchedCount === 0) {
+            return res.status(404).json({ success: false, message: 'Product not found' });
+        }
+        res.status(200).json({ success: true, message: 'Product approved successfully', result });
+    } catch (error) {
+        console.error('Error approving product:', error);
+        res.status(500).json({ success: false, message: 'Internal server error', error: error.message });
+    }
+};
+
+module.exports = { getFeaturedProducts, getLatestResources, postSubmittedProduct, getSubmittedProduct, deleteUserProduct, getAllSubmittedProducts, approvedPendingProducts };
