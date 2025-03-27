@@ -4,8 +4,17 @@ const { featuredProductsCollection, latestResourcesCollection } = require('../mo
 //fetch all approved featured products
 const getFeaturedProducts = async (req, res) => {
     try {
-        const result = await featuredProductsCollection.find({ status: "approved" }).toArray();
-        res.send(result);
+        const page = parseInt(req.query.page1) || 1;
+        const limit = parseInt(req.query.limit1) || 10;
+
+        const skip = (page - 1) * limit;
+
+        const result = await featuredProductsCollection.find({ status: "approved" }).skip(skip).limit(limit).toArray();
+
+        const totalDocuments = await latestResourcesCollection.countDocuments();
+        const totalPages = Math.ceil(totalDocuments / limit);
+
+        res.send({ data: result, pagination: {page, limit, totalDocuments, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1} });
     } catch (error) {
         console.error("Error fetching featured products:", error);
         res.status(500).send("Internal Server Error");
@@ -15,13 +24,23 @@ const getFeaturedProducts = async (req, res) => {
 //fetch all latest resources
 const getLatestResources = async (req, res) => {
     try {
-        const result = await latestResourcesCollection.find().toArray();
-        res.send(result);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        const skip = (page - 1) * limit;
+
+        const result = await latestResourcesCollection.find().skip(skip).limit(limit).toArray();
+
+        const totalDocuments = await latestResourcesCollection.countDocuments();
+
+        const totalPages = Math.ceil(totalDocuments / limit);
+
+        res.send({ data: result, pagination: {page, limit, totalDocuments, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1} });
     } catch (error) {
         console.error('Error fetching latest resources:', error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
-}
+};
 
 //submit a new product
 const postSubmittedProduct = async (req, res) => {
