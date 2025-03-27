@@ -27,14 +27,19 @@ const postUserProfileInfo = async (req, res) => {
 };
 
 const updateUserProfileInfo = async (req, res) => {
-    const email = req.params.email;
-    const updates = req.body;
-    const result = await userProfileInfoCollection.findOneAndUpdate(
-        { email },
-        { $set: updates },
-        { returnDocument: 'after' }
-    );
-    res.send(result);
+    try {
+        const email = req.params.email;
+        const updates = req.body;
+        const result = await userProfileInfoCollection.findOneAndUpdate(
+            { email },
+            { $set: updates },
+            { returnDocument: 'after' }
+        );
+        res.send(result);
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send({ message: 'Internal server error in updateuserprofileinfo'});
+    }
 };
 
 const getUserProfileInfo = async (req, res) => {
@@ -162,4 +167,15 @@ const jwtController = async (req, res) => {
     res.send({token});
 }
 
-module.exports = { getUsers, doUpvote, doUpvoteFeatured, getPaymentInfo, getAdminStatus, getModeratorStatus, jwtController, getUserProfileInfo, postUserProfileInfo, updateUserProfileInfo };
+module.exports = { 
+    getUsers, 
+    doUpvote, 
+    doUpvoteFeatured, 
+    getPaymentInfo, 
+    getAdminStatus, 
+    getModeratorStatus, 
+    jwtController, 
+    getUserProfileInfo, 
+    postUserProfileInfo, 
+    updateUserProfileInfo 
+};
