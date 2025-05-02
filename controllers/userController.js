@@ -8,6 +8,12 @@ const getUsers = async (req, res) => {
     res.send(result);
 }
 
+const deleteUser = async (req, res) => {
+    const query = { _id: new ObjectId(req.params.id) }
+    const result = await userProfileInfoCollection.deleteOne(query);
+    res.send(result);
+};
+
 const postUserProfileInfo = async (req, res) => {
     const email = req.params.email;
     const query = {email: email};
@@ -73,9 +79,9 @@ const doUpvote = async (req, res) => {
         const latestResource = await latestResourcesCollection.findOne({ _id: new ObjectId(cartId) });
         const updatedDoc = {
             $set: {
-                upvote: latestResource.upvote + 1,
+                upvote: latestResource?.upvote + 1,
                 upvoted: true + ' ' + userEmail,
-                previousUpvote: latestResource.upvote,
+                previousUpvote: latestResource?.upvote,
                 email: userEmail
             }
         };
@@ -127,6 +133,7 @@ const doUpvoteFeatured = async (req, res) => {
 const getPaymentInfo = async (req, res) => {
     const email = req.params.email;
     const filter = {email: email};
+    console.log(filter);
     const result = await subscribedUserCollection.findOne(filter);
     res.send(result);
 }
@@ -140,7 +147,7 @@ const getAdminStatus = async (req, res) => {
     const user = await userProfileInfoCollection.findOne(query);
     let admin = false;
     if(user) {
-        admin = user?.role === 'admin'
+        admin = user?.isAdmin === 'true'
     }
     res.send({admin});
 }
@@ -153,13 +160,12 @@ const getModeratorStatus = async (req, res) => {
     const query = {email: email};
     const user = await userProfileInfoCollection.findOne(query);
     let moderator = false;
+    
     if(user) {
-        moderator = user?.moderator === "true"
+        moderator = user?.isModerator === "true"
     }
-    res.send({moderator});
+    res.send({ moderator });
 };
-
-
 
 const jwtController = async (req, res) => {
     const user = req.body;
@@ -167,8 +173,60 @@ const jwtController = async (req, res) => {
     res.send({token});
 }
 
+const toggleModerator = async (req, res) => {
+    const email = req.params.email;
+    let isModerator;
+
+    const prevRole = await userProfileInfoCollection.findOne({ email: email });
+    if(prevRole.isModerator === 'true') {
+        isModerator = 'false';
+    } else {
+        isModerator = 'true';
+    }
+
+    const newUserRole = await userProfileInfoCollection.findOneAndUpdate(
+        { email: email },
+        { $set: { isModerator } },
+    );
+    // res.send(newUserRole, );
+    res.status(200).json({newUserRole, success: true});
+};
+
+const toggleAdmin = async (req, res) => {
+    const email = req.params.email;
+    let isAdmin;
+
+    const prevRole = await userProfileInfoCollection.findOne({ email: email });
+    if(prevRole.isAdmin === 'true') {
+        isAdmin = 'false';
+    } else {
+        isAdmin = 'true';
+    }
+
+    const newUserRole = await userProfileInfoCollection.findOneAndUpdate(
+        { email: email },
+        { $set: { isAdmin } },
+        { returnDocument: 'after' }
+    );
+    // res.send(newUserRole);
+    res.status(200).json({newUserRole, success: true});
+};
+
+const addNewUser = async (req, res) => {
+    console.log('req body', req.body);
+    const { newUser } = req.body;
+    const result = await userProfileInfoCollection.insertOne(newUser);
+    res.send(result);
+};
+
+
+
 module.exports = { 
-    getUsers, 
+    getUsers,
+    addNewUser,
+    toggleModerator,
+    toggleAdmin,
+    deleteUser, 
     doUpvote, 
     doUpvoteFeatured, 
     getPaymentInfo, 
