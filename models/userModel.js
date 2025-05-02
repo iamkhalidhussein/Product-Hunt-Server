@@ -5,4 +5,9 @@ const featuredProductsCollection = client.db("featuredProducts").collection("Pro
 const subscribedUserCollection = client.db("subscribedUsers").collection("users");
 const userProfileInfoCollection = client.db("Resource-fyi").collection("UserProfileInfo");
 
-module.exports = { latestResourcesCollection, featuredProductsCollection, subscribedUserCollection, userProfileInfoCollection };
+module.exports = { 
+    latestResourcesCollection, 
+    featuredProductsCollection, 
+    subscribedUserCollection, 
+    userProfileInfoCollection 
+};
