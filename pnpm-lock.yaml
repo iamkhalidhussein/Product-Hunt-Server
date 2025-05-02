@@ -30,8 +30,11 @@ importers:
         specifier: ^6.7.0
         version: 6.12.0
       stripe:
-        specifier: ^15.10.0
+        specifier: ^15.12.0
         version: 15.12.0
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
 
 packages:
 
@@ -877,8 +880,8 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
-  uuid@11.0.5:
-    resolution: {integrity: sha512-508e6IcKLrhxKdBbcA2b4KQZlLVp2+J5UwQ6F7Drckkc5N9ZJwFa4TgWtsww9UG8fGHbm6gbV19TdM5pQ4GaIA==}
+  uuid@11.1.0:
+    resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
     hasBin: true
 
   uuid@8.3.2:
@@ -1426,7 +1429,7 @@ snapshots:
       jsonwebtoken: 9.0.2
       jwks-rsa: 3.1.0
       node-forge: 1.3.1
-      uuid: 11.0.5
+      uuid: 11.1.0
     optionalDependencies:
       '@google-cloud/firestore': 7.11.0
       '@google-cloud/storage': 7.15.0
@@ -1961,7 +1964,7 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
-  uuid@11.0.5: {}
+  uuid@11.1.0: {}
 
   uuid@8.3.2:
     optional: true
