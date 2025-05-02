@@ -4,6 +4,7 @@ const { subscribedUserCollection } = require('../models/userModel');
 const { ObjectId } = require('mongodb');
 const { default: axios } = require('axios');
 require('dotenv').config();
+const { v4: uuidv4 } = require('uuid');
 
 const stripePayment = async (req, res) => {
     const payment = req.body;
@@ -27,70 +28,46 @@ const createPaymentIntent = async (req, res) => {
 };
 
 const createPayment = async (req, res) => {
-    const paymentInfo = req.body;
-    const trxId = new ObjectId().toString();
+    const { email } = req.body;
+    try {
+        const session = await stripe.checkout.sessions.create({
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: 'Express Submission',
+                        },
+                        unit_amount: 50 * 100 
+                    },
+                    quantity: req.quantity || 1
+                }
+            ],
+            mode: 'payment',
+            success_url: `${req.headers.origin}/paymentsuccess?amount=${50}&tran_id=${uuidv4()}`,
+            cancel_url: `${req.headers.origin}/paymentcancel`
+        });
 
-    const backendUrl = process.env.SERVER_URL;
 
-    const initiateData = {
-        store_id:"resou666a864f1b2b6",
-        store_passwd:"resou666a864f1b2b6@ssl",
-        total_amount: paymentInfo.ammount,
-        currency:paymentInfo.currenccy,
-        tran_id:trxId,
-        success_url:`${backendUrl}/payments/success-payment`,
-        fail_url:`${backendUrl}/payments/failed-payment`,
-        cancel_url:`${backendUrl}/payments/cancel-payment`,
-        cus_name:"Customer Name",
-        cus_email:"cust@yahoo.com",
-        cus_add1:"Dhaka",
-        cus_add2:"Dhaka",
-        cus_city:"Dhaka",
-        cus_state:"Dhaka",
-        cus_postcode:1000,
-        cus_country:"Bangladesh",
-        cus_phone:"01711111111",
-        cus_fax:"01711111111",
-        ship_name:"Customer Name",
-        shipping_method: 'NO',
-        product_name: 'Laptop',
-        product_category: 'Laptop',
-        product_profile: 'general',
-        ship_add1 :"Dhaka",
-        ship_add2:"Dhaka",
-        ship_city:"Dhaka",
-        ship_state:"Dhaka",
-        ship_postcode:1000,
-        ship_country:"Bangladesh",
-        multi_card_name:"mastercard,visacard,amexcard",
-        value_a:"ref001_A",
-        value_b:"ref002_B",
-        value_c:"ref003_C",
-        value_d:"ref004_D"
-    }
-                
-    const responce = await axios({
-        method: 'POST',
-        url: 'https://sandbox.sslcommerz.com/gwprocess/v4/api.php',
-        data: initiateData,
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-    })
-        
-    const savedData = {
-        cus_name: 'Customer',
-        paymentId: trxId,
-        amount: paymentInfo.ammount,
-        status: 'Pending'
+        const savedPaymentData = {
+            email: email?.email,
+            paymentId: uuidv4(),
+            amount: 50,
+            status: 'Paid',
+            date: new Date().toLocaleDateString()
+        };
+
+        await subscribedUserCollection.insertOne(savedPaymentData);
+        await payments.insertOne(savedPaymentData);
+
+        res.json({ id: session.id })
+
+    } catch (error) {
+        console.error('error creating payment checkout session', error);
+        res.status(500).json({ error: 'error creating checkout session' })
     }
 
-    const respon = await payments.insertOne(savedData)
-    if(respon) {
-        res.send({
-            paymentUrl: responce.data.GatewayPageURL
-        })
-}};
+};
 
 const successPayment = async (req, res) => {
     const successData = req.body;
