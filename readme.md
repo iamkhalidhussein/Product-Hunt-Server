@@ -13,7 +13,7 @@ Welcome to the **Product Discovery Platform Backend**. This is the server-side p
 - [License](#license)
 
 ## Project Structure
-```bash
+```js
 Product-Hunt-Server/
 │
 ├── .vercel/                  # Vercel configuration
@@ -29,7 +29,7 @@ Product-Hunt-Server/
 ├── index.js                 # Application entry point
 ├── package.json             # Dependencies and scripts
 ├── package-lock.json        # Lockfile for npm
-├── pnpm-lock.yaml           # Lockfile for pnpm (if used)
+├── pnpm-lock.yaml           # Lockfile for pnpm
 ├── readme.md                # Project documentation
 └── vercel.json              # Vercel deployment configuration
 ```
