@@ -12,6 +12,28 @@ Welcome to the **Product Discovery Platform Backend**. This is the server-side p
 - [Contributing](#contributing)
 - [License](#license)
 
+## Project Structure
+```bash
+Product-Hunt-Server/
+│
+├── .vercel/                  # Vercel configuration
+├── config/                   # Database and external service configurations
+├── controllers/              # Business logic for routes (products, users, etc.)
+├── firebase-sdk/            # Firebase Admin SDK configuration
+├── middleware/              # Custom Express middleware (auth, error handlers, etc.)
+├── models/                  # Mongoose schemas and data models
+├── routes/                  # All application routes grouped by feature
+├── services/                # Helper functions and business services
+│
+├── .gitignore               # Ignored files and directories
+├── index.js                 # Application entry point
+├── package.json             # Dependencies and scripts
+├── package-lock.json        # Lockfile for npm
+├── pnpm-lock.yaml           # Lockfile for pnpm (if used)
+├── readme.md                # Project documentation
+└── vercel.json              # Vercel deployment configuration
+```
+
 ## Features
 
 - **User Authentication**: Secure user registration and login using JWT.
@@ -41,5 +63,9 @@ Welcome to the **Product Discovery Platform Backend**. This is the server-side p
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/Khalid09dev/Product-Hunt-Server.git
+git clone https://github.com/iamkhalidhussein/Product-Hunt-Server.git
+```
+
+```bash
 cd Product-Hunt-Server
+```
